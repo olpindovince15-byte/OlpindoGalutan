@@ -1,3 +1,5 @@
+@file:Suppress("unused", "ObjectPropertyName")
+
 package com.example.unscramble
 
 
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -27,30 +28,24 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.shapes
-
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TextButton
-
 import androidx.compose.ui.Alignment
-
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
-
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-
 import androidx.compose.ui.unit.sp
-
+import androidx.lifecycle.ViewModel
 import com.example.unscramble.ui.theme.UnscrambleTheme
-
+import kotlinx.coroutines.flow.MutableStateFlow
 
 
 @Suppress("unused")
@@ -201,19 +196,14 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun GameScreen(
-    modifier: Modifier = Modifier
-) {
-
-    val mediumPadding = dimensionResource(
-        R.dimen.padding_medium
-    )
+fun GameScreen(modifier: Modifier = Modifier) {
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
-            .padding(mediumPadding),
-
+            .padding(mediumPadding
+            ),
         verticalArrangement = Arrangement.Center,
 
         horizontalAlignment = Alignment.CenterHorizontally
@@ -281,11 +271,7 @@ fun GameScreenPreview() {
 }
 
 @Composable
-private fun FinalScoreDialog(
-    score: Int,
-    onPlayAgain: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun FinalScoreDialog(score: Int, onPlayAgain: () -> Unit, modifier: Modifier = Modifier) {
     val activity = LocalActivity.current
 
     AlertDialog(
@@ -313,3 +299,25 @@ private fun FinalScoreDialog(
         }
     )
 }
+
+
+class GameViewModel : ViewModel() {
+    data class GameUiState(
+        val currentScrambledWord: String = ""
+    )
+       private var _count = 0
+
+    val count: Int
+        get() = _count
+}
+// Game UI state
+private val _uiState = MutableStateFlow(GameViewModel.GameUiState())
+
+
+
+
+
+
+
+
+
