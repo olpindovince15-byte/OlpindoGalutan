@@ -315,3 +315,10 @@ private fun FinalScoreDialog(
         }
     )
 }
+
+data class NewsItemUiState(
+    val title: String,
+    val body: String,
+    val bookmarked: Boolean = false,
+)
+
