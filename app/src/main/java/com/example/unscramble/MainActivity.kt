@@ -8,6 +8,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -44,10 +46,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unscramble.ui.theme.UnscrambleTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 
 //Vincent Olpindo & Aaron Earl Galutan
@@ -98,6 +102,10 @@ fun GameStatus(
 
 @Composable
 fun GameLayout(
+    onUserGuessChanged: (String) -> Unit,
+    userGuess: String,
+    onKeyboardDone: () -> Unit,
+    currentScrambledWord: String,
     modifier: Modifier = Modifier
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
@@ -129,7 +137,7 @@ fun GameLayout(
             )
 
             Text(
-                text = "scramble",
+                text = currentScrambledWord,
                 style = typography.displayMedium
             )
 
@@ -140,7 +148,7 @@ fun GameLayout(
             )
 
             OutlinedTextField(
-                value = "",
+                value = userGuess,
                 singleLine = true,
                 shape = shapes.large,
                 modifier = Modifier.fillMaxWidth(),
@@ -151,7 +159,7 @@ fun GameLayout(
                     disabledContainerColor = colorScheme.surface
                 ),
 
-                onValueChange = { },
+                onValueChange = onUserGuessChanged,
 
                 label = {
                     Text(
@@ -166,7 +174,7 @@ fun GameLayout(
                 ),
 
                 keyboardActions = KeyboardActions(
-                    onDone = { }
+                    onDone = { onKeyboardDone() }
                 )
             )
         }
@@ -200,7 +208,11 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun GameScreen(modifier: Modifier = Modifier) {
+fun GameScreen(
+    modifier: Modifier = Modifier,
+    gameViewModel: GameViewModel = viewModel()
+) {
+    val gameUiState by gameViewModel.uiState.collectAsState()
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
     Column(
@@ -219,6 +231,10 @@ fun GameScreen(modifier: Modifier = Modifier) {
         )
 
         GameLayout(
+            onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
+            userGuess = gameUiState.userGuess,
+            onKeyboardDone = { },
+            currentScrambledWord = gameUiState.currentScrambledWord,
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
@@ -275,7 +291,11 @@ fun GameScreenPreview() {
 }
 
 @Composable
-private fun FinalScoreDialog(score: Int, onPlayAgain: () -> Unit, modifier: Modifier = Modifier) {
+private fun FinalScoreDialog(
+    score: Int,
+    onPlayAgain: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val activity = LocalActivity.current
 
     AlertDialog(
@@ -304,18 +324,18 @@ private fun FinalScoreDialog(score: Int, onPlayAgain: () -> Unit, modifier: Modi
     )
 }
 
-
 class GameViewModel : ViewModel() {
     data class GameUiState(
-        val currentScrambledWord: String = ""
+        val currentScrambledWord: String = "",
+        val userGuess: String = "",
+        val isGuessedWordWrong: Boolean = false,
+        val score: Int = 0,
+        val wordCount: Int = 0,
+        val isGameOver: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
-
-    private var _count = 0
-    val count: Int
-        get() = _count
 
     private lateinit var currentWord: String
     private var usedWords: MutableSet<String> = mutableSetOf()
@@ -331,11 +351,11 @@ class GameViewModel : ViewModel() {
 
     private fun pickRandomWordAndShuffle(): String {
         currentWord = allWords.random()
-        if (usedWords.contains(currentWord)) {
-            return pickRandomWordAndShuffle()
+        return if (usedWords.contains(currentWord)) {
+            pickRandomWordAndShuffle()
         } else {
             usedWords.add(currentWord)
-            return shuffleCurrentWord(currentWord)
+            shuffleCurrentWord(currentWord)
         }
     }
 
@@ -347,13 +367,10 @@ class GameViewModel : ViewModel() {
         usedWords.clear()
         _uiState.value = GameUiState(currentScrambledWord = pickRandomWordAndShuffle())
     }
+
+    fun updateUserGuess(guessedWord: String) {
+        _uiState.update { currentState ->
+            currentState.copy(userGuess = guessedWord)
+        }
+    }
 }
-
-
-
-
-
-
-
-
-
