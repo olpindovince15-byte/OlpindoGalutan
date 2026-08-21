@@ -46,7 +46,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import com.example.unscramble.ui.theme.UnscrambleTheme
 import kotlinx.coroutines.flow.MutableStateFlow
-
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 
 //Vincent Olpindo & Aaron Earl Galutan
@@ -308,13 +309,45 @@ class GameViewModel : ViewModel() {
     data class GameUiState(
         val currentScrambledWord: String = ""
     )
-       private var _count = 0
 
+    private val _uiState = MutableStateFlow(GameUiState())
+    val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
+
+    private var _count = 0
     val count: Int
         get() = _count
+
+    private lateinit var currentWord: String
+    private var usedWords: MutableSet<String> = mutableSetOf()
+
+    private fun shuffleCurrentWord(word: String): String {
+        val tempWord = word.toCharArray()
+        tempWord.shuffle()
+        while (String(tempWord) == word) {
+            tempWord.shuffle()
+        }
+        return String(tempWord)
+    }
+
+    private fun pickRandomWordAndShuffle(): String {
+        currentWord = allWords.random()
+        if (usedWords.contains(currentWord)) {
+            return pickRandomWordAndShuffle()
+        } else {
+            usedWords.add(currentWord)
+            return shuffleCurrentWord(currentWord)
+        }
+    }
+
+    init {
+        resetGame()
+    }
+
+    fun resetGame() {
+        usedWords.clear()
+        _uiState.value = GameUiState(currentScrambledWord = pickRandomWordAndShuffle())
+    }
 }
-// Game UI state
-private val _uiState = MutableStateFlow(GameViewModel.GameUiState())
 
 
 
