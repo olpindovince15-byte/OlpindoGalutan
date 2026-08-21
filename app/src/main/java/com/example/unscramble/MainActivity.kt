@@ -36,10 +36,8 @@ import androidx.compose.material3.TextButton
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,44 +48,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.unscramble.ui.GameViewModel
 import com.example.unscramble.ui.theme.UnscrambleTheme
-
-
-
 
 // Vincent Olpindo & Aaron Earl Galutan
 
-const val MAX_NO_OF_WORDS = 10
-
-const val SCORE_INCREASE = 20
-
-val allWords: Set<String> = setOf(
-    "animal",
-    "auto",
-    "anecdote",
-    "alphabet",
-    "all",
-    "awesome",
-    "arise",
-    "balloon",
-    "basket",
-    "bench",
-    "zoology",
-    "zone",
-    "zeal"
-)
 
 
-// Returns a random word from the word list
-fun getRandomWord(): String {
-    return allWords.random()
-}
 
-
-// ---------------------------------------------------------
-// PHASE 1 - Game Status
-// ---------------------------------------------------------
 
 @Composable
 fun GameStatus(
@@ -106,9 +75,8 @@ fun GameStatus(
 }
 
 
-// ---------------------------------------------------------
-// PHASE 1 + PHASE 3 - Game Layout
-// ---------------------------------------------------------
+
+
 
 @Composable
 fun GameLayout(
@@ -116,6 +84,8 @@ fun GameLayout(
     userGuess: String,
     onKeyboardDone: () -> Unit,
     currentScrambledWord: String,
+    isGuessWrong: Boolean,
+    wordCount: Int,
     modifier: Modifier = Modifier
 ) {
 
@@ -147,7 +117,7 @@ fun GameLayout(
 
                 text = stringResource(
                     R.string.word_count,
-                    0
+                    wordCount
                 ),
 
                 style = typography.titleMedium,
@@ -156,7 +126,7 @@ fun GameLayout(
             )
 
 
-            // PHASE 2
+
             // Display scrambled word
             Text(
                 text = currentScrambledWord,
@@ -172,7 +142,7 @@ fun GameLayout(
             )
 
 
-            // PHASE 3
+
             // Accept user's answer
             OutlinedTextField(
 
@@ -195,13 +165,12 @@ fun GameLayout(
                 label = {
                     Text(
                         stringResource(
-                            R.string.enter_your_word
+                            if (isGuessWrong) R.string.wrong_guess else R.string.enter_your_word
                         )
                     )
                 },
 
-                // Phase 4 has not been implemented yet
-                isError = false,
+                isError = isGuessWrong,
 
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done
@@ -218,9 +187,6 @@ fun GameLayout(
 }
 
 
-// ---------------------------------------------------------
-// MAIN ACTIVITY
-// ---------------------------------------------------------
 
 class MainActivity : ComponentActivity() {
 
@@ -247,189 +213,88 @@ class MainActivity : ComponentActivity() {
 }
 
 
-// ---------------------------------------------------------
-// GAME SCREEN
-// ---------------------------------------------------------
 
-@Preview(showBackground = true)
+
 @Composable
 fun GameScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    gameViewModel: GameViewModel = viewModel()
 ) {
-
-    // PHASE 3
-    // Store the user's answer locally.
-    var userGuess by remember {
-        mutableStateOf("")
-    }
-
-
-    // PHASE 2
-    // Get a scrambled word.
-    var currentScrambledWord by remember {
-        mutableStateOf(
-            shuffleCurrentWord(
-                getRandomWord()
-            )
-        )
-    }
-
-
-    val mediumPadding =
-        dimensionResource(R.dimen.padding_medium)
-
+    val gameUiState by gameViewModel.uiState.collectAsState()
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
     Column(
-
         modifier = modifier
-            .verticalScroll(
-                rememberScrollState()
-            )
+            .verticalScroll(rememberScrollState())
             .padding(mediumPadding),
-
         verticalArrangement = Arrangement.Center,
-
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-
-        // App title
         Text(
             text = stringResource(R.string.app_name),
             style = typography.titleLarge
         )
 
-
-        // Game area
         GameLayout(
-
-            onUserGuessChanged = {
-                userGuess = it
-            },
-
-            userGuess = userGuess,
-
-            // Phase 4 not implemented yet
-            onKeyboardDone = {
-            },
-
-            currentScrambledWord = currentScrambledWord,
-
+            onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
+            wordCount = gameUiState.currentWordCount,
+            userGuess = gameViewModel.userGuess,
+            onKeyboardDone = { gameViewModel.checkUserGuess() },
+            currentScrambledWord = gameUiState.currentScrambledWord,
+            isGuessWrong = gameUiState.isGuessedWordWrong,
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
                 .padding(mediumPadding)
         )
 
-
-        // Buttons
         Column(
-
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(mediumPadding),
-
-            verticalArrangement = Arrangement.spacedBy(
-                mediumPadding
-            ),
-
+            verticalArrangement = Arrangement.spacedBy(mediumPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-
-            // Submit button
             Button(
-
                 modifier = Modifier.fillMaxWidth(),
-
-                // Phase 4 not implemented yet
-                onClick = {
-                }
-
+                onClick = { gameViewModel.checkUserGuess() }
             ) {
-
                 Text(
-                    text = stringResource(
-                        R.string.submit
-                    ),
-
+                    text = stringResource(R.string.submit),
                     fontSize = 16.sp
                 )
             }
 
-
-            // Skip button
             OutlinedButton(
-
-                onClick = {
-                    // Phase 6 not implemented yet
-                },
-
+                onClick = { gameViewModel.skipWord() },
                 modifier = Modifier.fillMaxWidth()
-
             ) {
-
                 Text(
-                    text = stringResource(
-                        R.string.skip
-                    ),
-
+                    text = stringResource(R.string.skip),
                     fontSize = 16.sp
                 )
             }
         }
 
+        GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
 
-        // Score
-        GameStatus(
-            score = 0,
-            modifier = Modifier.padding(20.dp)
-        )
+        if (gameUiState.isGameOver) {
+            FinalScoreDialog(
+                score = gameUiState.score,
+                onPlayAgain = { gameViewModel.resetGame() }
+            )
+        }
     }
 }
-
-
-// ---------------------------------------------------------
-// PHASE 2 - Shuffle Word
-// ---------------------------------------------------------
-
-fun shuffleCurrentWord(
-    word: String
-): String {
-
-    val tempWord = word.toCharArray()
-
-    tempWord.shuffle()
-
-    // Make sure scrambled word isn't
-    // identical to the original word.
-    while (String(tempWord) == word) {
-        tempWord.shuffle()
-    }
-
-    return String(tempWord)
-}
-
-
-// ---------------------------------------------------------
-// PREVIEW
-// ---------------------------------------------------------
 
 @Preview(showBackground = true)
 @Composable
 fun GameScreenPreview() {
-
     UnscrambleTheme {
         GameScreen()
     }
 }
-
-
-// ---------------------------------------------------------
-// FINAL SCORE DIALOG
-// ---------------------------------------------------------
-// This is UI provided for a later phase.
-// It is not connected yet.
 
 @Composable
 private fun FinalScoreDialog(
@@ -437,61 +302,29 @@ private fun FinalScoreDialog(
     onPlayAgain: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     val activity = LocalActivity.current
 
     AlertDialog(
-
         onDismissRequest = {
             // Dialog will be connected later
         },
-
-        title = {
-            Text(
-                text = stringResource(
-                    R.string.congratulations
-                )
-            )
-        },
-
-        text = {
-            Text(
-                text = stringResource(
-                    R.string.you_scored,
-                    score
-                )
-            )
-        },
-
+        title = { Text(text = stringResource(R.string.congratulations)) },
+        text = { Text(text = stringResource(R.string.you_scored, score)) },
         modifier = modifier,
-
         dismissButton = {
-
             TextButton(
                 onClick = {
                     activity?.finish()
                 }
             ) {
-
-                Text(
-                    text = stringResource(
-                        R.string.exit
-                    )
-                )
+                Text(text = stringResource(R.string.exit))
             }
         },
-
         confirmButton = {
-
             TextButton(
                 onClick = onPlayAgain
             ) {
-
-                Text(
-                    text = stringResource(
-                        R.string.play_again
-                    )
-                )
+                Text(text = stringResource(R.string.play_again))
             }
         }
     )
