@@ -1,4 +1,4 @@
-@file:Suppress("unused", "ObjectPropertyName")
+@file:Suppress("unused", "ObjectPropertyName", "SpellCheckingInspection")
 
 package com.example.unscramble
 
@@ -47,6 +47,9 @@ import androidx.lifecycle.ViewModel
 import com.example.unscramble.ui.theme.UnscrambleTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 
+
+
+//Vincent Olpindo & Aaron Earl Galutan
 
 @Suppress("unused")
 const val MAX_NO_OF_WORDS = 10
